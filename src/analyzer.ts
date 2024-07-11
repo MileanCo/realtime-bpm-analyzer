@@ -228,8 +228,11 @@ export function identifyIntervals(peaks: Peaks): Interval[] {
   for (let n = 0; n < peaks.length; n++) {
     for (let i = 0; i < 10; i++) {
       const peak = peaks[n];
+      //   Console.log("peak " + peak);
       const peakIndex = n + i;
+      //   Console.log("peakIndex " + peakIndex);
       const interval = peaks[peakIndex] - peak;
+      //   Console.log("interval " + interval);
 
       /**
        * Try and find a matching interval and increase it's count
@@ -332,19 +335,50 @@ export function groupByTempo({
   return tempoCounts;
 }
 
+function indexToTime(index: number, sampleRate: number): number {
+  return index / sampleRate;
+}
+
 /**
  * Fastest way to detect the BPM from an AudioBuffer
  * @param originalBuffer - AudioBuffer
  * @param options - BiquadFilterOptions
  * @returns Returns the best candidates
  */
-export async function analyzeFullBuffer(originalBuffer: AudioBuffer, options?: BiquadFilterOptions): Promise<Tempo[]> {
+export async function analyzeFullBuffer(originalBuffer: AudioBuffer, options?: BiquadFilterOptions): Promise<any> {
   const buffer = await getOfflineLowPassSource(originalBuffer, options);
-  const channelData = buffer.getChannelData(0);
-  const {peaks} = await findPeaks({audioSampleRate: buffer.sampleRate, channelData});
-  const intervals = identifyIntervals(peaks);
-  const tempos = groupByTempo({audioSampleRate: buffer.sampleRate, intervalCounts: intervals});
-  const topCandidates = getTopCandidates(tempos);
+  //   Console.log("buffer")
+  //   console.log(buffer)
+  // const buffer = originalBuffer;
 
-  return topCandidates;
+  const channelData = buffer.getChannelData(0);
+
+  const {peaks} = await findPeaks({audioSampleRate: buffer.sampleRate, channelData});
+  console.log('peaks');
+  console.log(peaks);
+
+  const peakTimes = [];
+  for (const peak of peaks) {
+    peakTimes.push(peak / buffer.sampleRate);
+  }
+
+  console.log('peakTimes');
+  console.log(peakTimes);
+
+  const intervals = identifyIntervals(peaks);
+  //   Console.log("intervals")
+  //   console.log(intervals)
+
+  const tempos = groupByTempo({audioSampleRate: buffer.sampleRate, intervalCounts: intervals});
+  console.log('tempos');
+  console.log(tempos);
+
+  const topCandidates = getTopCandidates(tempos);
+  return {
+    peaks,
+    peakTimes,
+    intervals,
+    tempos,
+    topCandidates,
+  };
 }
